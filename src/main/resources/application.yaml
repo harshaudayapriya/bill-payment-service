@@ -22,10 +22,32 @@ spring:
       hibernate:
         format_sql: true
 
-#server port
+  # Security credentials for Actuator endpoints
+  security:
+    user:
+      name: ${ACTUATOR_USERNAME:actuator-admin}
+      password: ${ACTUATOR_PASSWORD:changeme}
+
 server:
   port: 8080
 
 # Exchange rate API (dummy/stub endpoint)
 exchange-rate:
   api-url: https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/rates_of_exchange
+
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,loggers
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
