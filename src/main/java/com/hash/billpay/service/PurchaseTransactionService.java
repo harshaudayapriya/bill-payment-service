@@ -86,7 +86,7 @@ public class PurchaseTransactionService {
     @Transactional(readOnly = true)
     public ConvertedTransactionResponse getTransactionInCurrency(UUID id, String targetCurrency) {
 
-        PurchaseTransaction transaction = repository.findById(id)
+        PurchaseTransaction transaction = repository.findByIdempotencyKey(id)
                 .orElseThrow(() -> new TransactionNotFoundException(id));
 
         // Fetch the closest exchange rate from the external API
