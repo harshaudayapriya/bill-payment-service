@@ -26,7 +26,12 @@ spring:
   security:
     user:
       name: ${ACTUATOR_USERNAME:actuator-admin}
-      password: ${ACTUATOR_PASSWORD:changeme}
+      password: ${ACTUATOR_PASSWORD:actuator-password}
+
+# API security
+api:
+  security:
+    api-key: ${API_KEY:test-api-key}
 
 server:
   port: 8080

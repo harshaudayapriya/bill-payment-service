@@ -20,6 +20,11 @@ spring:
       name: test-admin
       password: test-password
 
+# API security
+api:
+  security:
+    api-key: test-api-key
+
 
 # Exchange rate API (dummy/stub endpoint)
 exchange-rate:
