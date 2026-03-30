@@ -5,6 +5,7 @@ import com.hash.billpay.dto.ConvertedTransactionResponse;
 import com.hash.billpay.dto.ExchangeRateEntry;
 import com.hash.billpay.dto.PurchaseTransactionRequest;
 import com.hash.billpay.dto.PurchaseTransactionResponse;
+import com.hash.billpay.exception.DuplicateTransactionException;
 import com.hash.billpay.exception.TransactionNotFoundException;
 import com.hash.billpay.model.PurchaseTransaction;
 import com.hash.billpay.repository.PurchaseTransactionRepository;
@@ -33,7 +34,12 @@ public class PurchaseTransactionService {
     @Transactional
     public PurchaseTransactionResponse createTransaction(PurchaseTransactionRequest request) {
 
+        if (repository.existsByIdempotencyKey(request.getIdempotencyKey())) {
+            throw new DuplicateTransactionException(request.getIdempotencyKey());
+        }
+
         PurchaseTransaction transaction = PurchaseTransaction.builder()
+                .idempotencyKey(request.getIdempotencyKey())
                 .description(request.getDescription())
                 .transactionDate(request.getTransactionDate())
                 .purchaseAmount(request.getPurchaseAmount().setScale(2, RoundingMode.HALF_UP))

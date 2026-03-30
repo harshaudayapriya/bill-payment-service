@@ -13,6 +13,8 @@ import java.util.UUID;
 @Repository
 public interface PurchaseTransactionRepository extends JpaRepository<PurchaseTransaction, UUID> {
 
+    boolean existsByIdempotencyKey(UUID idempotencyKey);
+
     Page<PurchaseTransaction> findByTransactionDateBetween(LocalDate from, LocalDate to, Pageable pageable);
 
     Page<PurchaseTransaction> findByBillerType(BillerType billerType, Pageable pageable);

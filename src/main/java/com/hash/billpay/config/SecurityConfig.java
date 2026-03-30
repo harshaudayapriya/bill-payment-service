@@ -28,7 +28,6 @@ public class SecurityConfig {
         http
                 .securityMatcher("/actuator/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())

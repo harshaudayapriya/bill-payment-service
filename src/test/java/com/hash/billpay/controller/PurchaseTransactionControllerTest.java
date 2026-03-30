@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hash.billpay.config.TestConfig;
 import com.hash.billpay.dto.PurchaseTransactionRequest;
 import com.hash.billpay.dto.PurchaseTransactionResponse;
+import com.hash.billpay.exception.DuplicateTransactionException;
 import com.hash.billpay.model.BillerType;
 import com.hash.billpay.service.PurchaseTransactionService;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,7 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(PurchaseTransactionController.class)
 @Import(TestConfig.class)
+@TestPropertySource(properties = "api.security.api-key=test-api-key")
 class PurchaseTransactionControllerTest {
+
+    private static final String API_KEY_HEADER = "X-API-Key";
+    private static final String VALID_API_KEY = "test-api-key";
 
     @Autowired
     private MockMvc mockMvc;
@@ -42,6 +48,26 @@ class PurchaseTransactionControllerTest {
     private PurchaseTransactionService transactionService;
 
     @Nested
+    @DisplayName("API Key Authentication")
+    class ApiKeySecurity {
+
+        @Test
+        @DisplayName("Should return 401 when API key is missing")
+        void shouldRejectRequestWithoutApiKey() throws Exception {
+            mockMvc.perform(get("/api/v1/transactions"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("Should return 401 when API key is invalid")
+        void shouldRejectRequestWithInvalidApiKey() throws Exception {
+            mockMvc.perform(get("/api/v1/transactions")
+                            .header(API_KEY_HEADER, "wrong-key"))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/v1/transactions")
     class CreateTransaction {
 
@@ -50,6 +76,7 @@ class PurchaseTransactionControllerTest {
         void shouldCreateTransaction() throws Exception {
             UUID id = UUID.randomUUID();
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(UUID.randomUUID())
                     .description("Electric bill payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
@@ -68,6 +95,7 @@ class PurchaseTransactionControllerTest {
             when(transactionService.createTransaction(any())).thenReturn(response);
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
@@ -81,6 +109,7 @@ class PurchaseTransactionControllerTest {
         @DisplayName("Should return 400 when description is blank")
         void shouldFailWhenDescriptionBlank() throws Exception {
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(UUID.randomUUID())
                     .description("")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
@@ -88,6 +117,7 @@ class PurchaseTransactionControllerTest {
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -97,6 +127,7 @@ class PurchaseTransactionControllerTest {
         @DisplayName("Should return 400 when description exceeds 50 characters")
         void shouldFailWhenDescriptionTooLong() throws Exception {
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(UUID.randomUUID())
                     .description("A".repeat(51))
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
@@ -104,6 +135,7 @@ class PurchaseTransactionControllerTest {
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -113,6 +145,7 @@ class PurchaseTransactionControllerTest {
         @DisplayName("Should return 400 when purchase amount is negative")
         void shouldFailWhenAmountNegative() throws Exception {
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(UUID.randomUUID())
                     .description("Test payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("-10.00"))
@@ -120,6 +153,7 @@ class PurchaseTransactionControllerTest {
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -129,6 +163,7 @@ class PurchaseTransactionControllerTest {
         @DisplayName("Should return 400 when purchase amount is zero")
         void shouldFailWhenAmountZero() throws Exception {
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(UUID.randomUUID())
                     .description("Test payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(BigDecimal.ZERO)
@@ -136,6 +171,7 @@ class PurchaseTransactionControllerTest {
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -145,13 +181,14 @@ class PurchaseTransactionControllerTest {
         @DisplayName("Should return 400 when transaction date is null")
         void shouldFailWhenDateNull() throws Exception {
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(UUID.randomUUID())
                     .description("Test payment")
-                    .transactionDate(null)
                     .purchaseAmount(new BigDecimal("50.00"))
                     .billerType(BillerType.GAS)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -161,6 +198,7 @@ class PurchaseTransactionControllerTest {
         @DisplayName("Should return 400 when biller type is null")
         void shouldFailWhenBillerTypeNull() throws Exception {
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(UUID.randomUUID())
                     .description("Test payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("50.00"))
@@ -168,6 +206,7 @@ class PurchaseTransactionControllerTest {
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -186,6 +225,7 @@ class PurchaseTransactionControllerTest {
                     """;
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(invalidJson))
                     .andExpect(status().isBadRequest())
@@ -206,10 +246,54 @@ class PurchaseTransactionControllerTest {
                     """;
 
             mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(invalidJson))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.title").value("Invalid Request Body"));
+        }
+
+        @Test
+        @DisplayName("Should return 400 when idempotency key is null")
+        void shouldFailWhenIdempotencyKeyNull() throws Exception {
+            PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(null)
+                    .description("Test payment")
+                    .transactionDate(LocalDate.of(2025, 3, 15))
+                    .purchaseAmount(new BigDecimal("50.00"))
+                    .billerType(BillerType.ELECTRICITY)
+                    .build();
+
+            mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should return 409 when idempotency key is a duplicate")
+        void shouldFailWhenDuplicateIdempotencyKey() throws Exception {
+            UUID duplicateKey = UUID.randomUUID();
+            PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(duplicateKey)
+                    .description("Test payment")
+                    .transactionDate(LocalDate.of(2025, 3, 15))
+                    .purchaseAmount(new BigDecimal("50.00"))
+                    .billerType(BillerType.ELECTRICITY)
+                    .build();
+
+            when(transactionService.createTransaction(any()))
+                    .thenThrow(new DuplicateTransactionException(duplicateKey));
+
+            mockMvc.perform(post("/api/v1/transactions")
+                            .header(API_KEY_HEADER, VALID_API_KEY)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.title").value("Duplicate Transaction"))
+                    .andExpect(jsonPath("$.detail").value(
+                            org.hamcrest.Matchers.containsString(duplicateKey.toString())));
         }
     }
 
@@ -221,18 +305,19 @@ class PurchaseTransactionControllerTest {
         @DisplayName("Should return a transaction by ID")
         void shouldReturnTransaction() throws Exception {
             UUID id = UUID.randomUUID();
-            com.hash.billpay.dto.PurchaseTransactionResponse response = PurchaseTransactionResponse.builder()
+            PurchaseTransactionResponse response = PurchaseTransactionResponse.builder()
                     .id(id)
                     .description("Internet bill")
                     .transactionDate(LocalDate.of(2025, 2, 10))
                     .purchaseAmount(new BigDecimal("89.99"))
-                    .billerType(com.hash.billpay.model.BillerType.INTERNET)
+                    .billerType(BillerType.INTERNET)
                     .createdAt(LocalDateTime.now())
                     .build();
 
             when(transactionService.getTransaction(id)).thenReturn(response);
 
-            mockMvc.perform(get("/api/v1/transactions/{id}", id))
+            mockMvc.perform(get("/api/v1/transactions/{id}", id)
+                            .header(API_KEY_HEADER, VALID_API_KEY))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id.toString()))
                     .andExpect(jsonPath("$.description").value("Internet bill"))

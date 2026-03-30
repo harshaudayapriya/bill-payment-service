@@ -5,6 +5,7 @@ import com.hash.billpay.dto.ConvertedTransactionResponse;
 import com.hash.billpay.dto.ExchangeRateEntry;
 import com.hash.billpay.dto.PurchaseTransactionRequest;
 import com.hash.billpay.dto.PurchaseTransactionResponse;
+import com.hash.billpay.exception.DuplicateTransactionException;
 import com.hash.billpay.exception.TransactionNotFoundException;
 import com.hash.billpay.model.BillerType;
 import com.hash.billpay.model.PurchaseTransaction;
@@ -25,8 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PurchaseTransactionServiceTest {
@@ -47,7 +47,9 @@ class PurchaseTransactionServiceTest {
         @Test
         @DisplayName("Should create and return a transaction")
         void shouldCreateTransaction() {
+            UUID idempotencyKey = UUID.randomUUID();
             PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(idempotencyKey)
                     .description("Electric bill")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.755"))
@@ -56,12 +58,14 @@ class PurchaseTransactionServiceTest {
 
             PurchaseTransaction savedEntity = PurchaseTransaction.builder()
                     .id(UUID.randomUUID())
+                    .idempotencyKey(idempotencyKey)
                     .description("Electric bill")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.76")) // rounded
                     .billerType(BillerType.ELECTRICITY)
                     .build();
 
+            when(repository.existsByIdempotencyKey(idempotencyKey)).thenReturn(false);
             when(repository.save(any(PurchaseTransaction.class))).thenReturn(savedEntity);
 
             PurchaseTransactionResponse response = service.createTransaction(request);
@@ -71,7 +75,30 @@ class PurchaseTransactionServiceTest {
             assertThat(response.getPurchaseAmount()).isEqualByComparingTo(new BigDecimal("150.76"));
             assertThat(response.getBillerType()).isEqualTo(BillerType.ELECTRICITY);
 
+            verify(repository).existsByIdempotencyKey(idempotencyKey);
             verify(repository).save(any(PurchaseTransaction.class));
+        }
+
+        @Test
+        @DisplayName("Should throw DuplicateTransactionException when idempotency key already exists")
+        void shouldThrowWhenDuplicateIdempotencyKey() {
+            UUID idempotencyKey = UUID.randomUUID();
+            PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
+                    .idempotencyKey(idempotencyKey)
+                    .description("Electric bill")
+                    .transactionDate(LocalDate.of(2025, 3, 15))
+                    .purchaseAmount(new BigDecimal("150.75"))
+                    .billerType(BillerType.ELECTRICITY)
+                    .build();
+
+            when(repository.existsByIdempotencyKey(idempotencyKey)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.createTransaction(request))
+                    .isInstanceOf(DuplicateTransactionException.class)
+                    .hasMessageContaining(idempotencyKey.toString());
+
+            verify(repository).existsByIdempotencyKey(idempotencyKey);
+            verify(repository, never()).save(any());
         }
     }
 

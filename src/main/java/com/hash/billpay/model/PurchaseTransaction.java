@@ -16,7 +16,9 @@ import java.util.UUID;
  * JPA entity representing a purchase transaction (bill payment).
  */
 @Entity
-@Table(name = "purchase_transaction")
+@Table(name = "purchase_transaction", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_idempotency_key", columnNames = "idempotency_key")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,6 +33,12 @@ public class PurchaseTransaction {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
+
+    /**
+     * Client-supplied idempotency key to prevent duplicate transactions.
+     */
+    @Column(name = "idempotency_key", nullable = false, unique = true, updatable = false)
+    private UUID idempotencyKey;
 
     /**
      * Description of the transaction (max 50 characters).

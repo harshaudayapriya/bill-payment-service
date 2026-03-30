@@ -29,6 +29,15 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(DuplicateTransactionException.class)
+    public ProblemDetail handleDuplicateTransaction(DuplicateTransactionException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Duplicate Transaction");
+        problem.setType(URI.create("https://billpay.com/errors/duplicate-transaction"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(ExchangeRateNotFoundException.class)
     public ProblemDetail handleExchangeRateNotFound(ExchangeRateNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
