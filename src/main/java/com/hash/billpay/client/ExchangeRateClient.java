@@ -5,9 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hash.billpay.dto.ExchangeRateEntry;
 import com.hash.billpay.exception.ExchangeRateApiException;
 import com.hash.billpay.exception.ExchangeRateNotFoundException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -40,6 +43,9 @@ public class ExchangeRateClient {
      * @param transactionDate the date of the purchase transaction
      * @return the closest matching ExchangeRateEntry
      */
+    @Cacheable(value = "exchangeRates", key = "#currency + '_' + #transactionDate")
+    @CircuitBreaker(name = "exchangeRate", fallbackMethod = "exchangeRateFallback")
+    @Retry(name = "exchangeRate")
     public ExchangeRateEntry getExchangeRate(String currency, LocalDate transactionDate) {
         try {
             // Query rates for the given currency, sorted by effective_date descending

@@ -40,6 +40,36 @@ server:
 exchange-rate:
   api-url: https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/rates_of_exchange
 
+# Resilience4j
+resilience4j:
+  retry:
+    instances:
+      exchangeRate:
+        max-attempts: 3
+        wait-duration: 1s
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - com.hash.billpay.exception.ExchangeRateApiException
+        ignore-exceptions:
+          - com.hash.billpay.exception.ExchangeRateNotFoundException
+  circuitbreaker:
+    instances:
+      exchangeRate:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        minimum-number-of-calls: 5
+        record-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - com.hash.billpay.exception.ExchangeRateApiException
+        ignore-exceptions:
+          - com.hash.billpay.exception.ExchangeRateNotFoundException
 
 # Actuator
 management:
@@ -50,6 +80,9 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  health:
+    circuitbreakers:
+      enabled: true
 
 springdoc:
   api-docs:

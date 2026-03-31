@@ -65,14 +65,18 @@ public class PurchaseTransactionController {
 
     /**
      * GET /api/v1/transactions/{id}/convert?currency=Canada-Dollar
-     * Retrieves the transaction with the amount converted to the specified currency.
-     * The exchange rate is fetched from the Treasury Fiscal Data API, using the rate
-     * closest to the transaction date.
+     * Retrieves the stored purchase transaction converted to the specified currency.
+     * The exchange rate must be active for the date of the purchase and within
+     * 6 months of the purchase date (per Treasury Reporting Rates of Exchange API).
+     * Returns 400 if no exchange rate is available within the 6-month window.
      */
     @GetMapping("/{id}/convert")
-    @Operation(summary = "Get transaction in a specified currency",
-            description = "Retrieves a purchase transaction with the amount converted to the target currency "
-                    + "using the exchange rate closest to the transaction date from the Treasury Fiscal Data API")
+    @Operation(summary = "Get transaction converted to a specified currency",
+            description = "Retrieves a stored purchase transaction with the amount converted to the target currency "
+                    + "using the exchange rate active for the date of the purchase from the Treasury Reporting Rates "
+                    + "of Exchange API. The exchange rate must be within 6 months of the purchase date. "
+                    + "The response includes the identifier, description, transaction date, original US dollar "
+                    + "purchase amount, the exchange rate used, and the converted amount.")
     public ResponseEntity<ConvertedTransactionResponse> getTransactionInCurrency(
             @PathVariable UUID id,
             @Parameter(description = "Target currency description, e.g. 'Canada-Dollar', 'Euro Zone-Euro', 'United Kingdom-Pound'")

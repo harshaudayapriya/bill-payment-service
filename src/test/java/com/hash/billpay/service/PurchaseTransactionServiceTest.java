@@ -152,6 +152,7 @@ class PurchaseTransactionServiceTest {
                     .transactionDate(LocalDate.of(2025, 3, 1))
                     .purchaseAmount(new BigDecimal("100.00"))
                     .billerType(BillerType.INSURANCE)
+                    .idempotencyKey(id)
                     .build();
 
             ExchangeRateEntry rateEntry = ExchangeRateEntry.builder()
@@ -162,7 +163,7 @@ class PurchaseTransactionServiceTest {
                     .effectiveDate(LocalDate.of(2025, 3, 1))
                     .build();
 
-            when(repository.findById(id)).thenReturn(Optional.of(entity));
+            when(repository.findByIdempotencyKey(id)).thenReturn(Optional.of(entity));
             when(exchangeRateClient.getExchangeRate("Canada-Dollar", LocalDate.of(2025, 3, 1)))
                     .thenReturn(rateEntry);
 
@@ -178,7 +179,7 @@ class PurchaseTransactionServiceTest {
         @DisplayName("Should throw when transaction not found for conversion")
         void shouldThrowWhenTransactionNotFoundForConversion() {
             UUID id = UUID.randomUUID();
-            when(repository.findById(id)).thenReturn(Optional.empty());
+            when(repository.findByIdempotencyKey(id)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.getTransactionInCurrency(id, "Canada-Dollar"))
                     .isInstanceOf(TransactionNotFoundException.class);

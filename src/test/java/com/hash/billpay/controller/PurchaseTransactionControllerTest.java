@@ -1,6 +1,7 @@
 package com.hash.billpay.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hash.billpay.config.SecurityConfig;
 import com.hash.billpay.config.TestConfig;
 import com.hash.billpay.dto.PurchaseTransactionRequest;
 import com.hash.billpay.dto.PurchaseTransactionResponse;
@@ -31,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PurchaseTransactionController.class)
-@Import(TestConfig.class)
+@Import({SecurityConfig.class, TestConfig.class})
 @TestPropertySource(properties = "api.security.api-key=test-api-key")
 class PurchaseTransactionControllerTest {
 

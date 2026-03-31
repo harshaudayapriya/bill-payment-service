@@ -29,3 +29,30 @@ api:
 # Exchange rate API (dummy/stub endpoint)
 exchange-rate:
   api-url: https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/rates_of_exchange
+
+# Resilience4j — relaxed settings for tests
+resilience4j:
+  retry:
+    instances:
+      exchangeRate:
+        max-attempts: 1
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - com.hash.billpay.exception.ExchangeRateApiException
+        ignore-exceptions:
+          - com.hash.billpay.exception.ExchangeRateNotFoundException
+  circuitbreaker:
+    instances:
+      exchangeRate:
+        register-health-indicator: true
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        minimum-number-of-calls: 5
+        record-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - com.hash.billpay.exception.ExchangeRateApiException
+        ignore-exceptions:
+          - com.hash.billpay.exception.ExchangeRateNotFoundException

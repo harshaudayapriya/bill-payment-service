@@ -5,6 +5,6 @@ EXPOSE 8080
 
 RUN mkdir -p /app/data
 
-COPY target/bill-payments-service-*.jar app.jar
+COPY target/bill-payment-service-*.jar app.jar
 
 WORKDIR /app
