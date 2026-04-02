@@ -1,6 +1,5 @@
 package com.hash.billpay.dto;
 
-import com.hash.billpay.model.BillerType;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -25,8 +24,6 @@ public class PurchaseTransactionRequest {
     @NotNull(message = "Idempotency key is required")
     private UUID idempotencyKey;
 
-    @NotNull(message = "Biller type is required")
-    private BillerType billerType;
 
     @Digits(integer = 15, fraction = 2, message = "Purchase amount must be rounded to the nearest cent")
     @DecimalMin(value = "0.01", message = "Purchase amount must be a positive value")

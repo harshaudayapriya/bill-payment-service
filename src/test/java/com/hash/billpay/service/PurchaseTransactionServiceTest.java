@@ -7,7 +7,6 @@ import com.hash.billpay.dto.PurchaseTransactionRequest;
 import com.hash.billpay.dto.PurchaseTransactionResponse;
 import com.hash.billpay.exception.DuplicateTransactionException;
 import com.hash.billpay.exception.TransactionNotFoundException;
-import com.hash.billpay.model.BillerType;
 import com.hash.billpay.model.PurchaseTransaction;
 import com.hash.billpay.repository.PurchaseTransactionRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +52,6 @@ class PurchaseTransactionServiceTest {
                     .description("Electric bill")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.755"))
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             PurchaseTransaction savedEntity = PurchaseTransaction.builder()
@@ -62,7 +60,6 @@ class PurchaseTransactionServiceTest {
                     .description("Electric bill")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.76")) // rounded
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             when(repository.existsByIdempotencyKey(idempotencyKey)).thenReturn(false);
@@ -73,8 +70,6 @@ class PurchaseTransactionServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.getDescription()).isEqualTo("Electric bill");
             assertThat(response.getPurchaseAmount()).isEqualByComparingTo(new BigDecimal("150.76"));
-            assertThat(response.getBillerType()).isEqualTo(BillerType.ELECTRICITY);
-
             verify(repository).existsByIdempotencyKey(idempotencyKey);
             verify(repository).save(any(PurchaseTransaction.class));
         }
@@ -88,7 +83,6 @@ class PurchaseTransactionServiceTest {
                     .description("Electric bill")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             when(repository.existsByIdempotencyKey(idempotencyKey)).thenReturn(true);
@@ -115,7 +109,6 @@ class PurchaseTransactionServiceTest {
                     .description("Water bill")
                     .transactionDate(LocalDate.of(2025, 1, 20))
                     .purchaseAmount(new BigDecimal("45.00"))
-                    .billerType(BillerType.WATER)
                     .build();
 
             when(repository.findById(id)).thenReturn(Optional.of(entity));
@@ -151,7 +144,6 @@ class PurchaseTransactionServiceTest {
                     .description("Insurance premium")
                     .transactionDate(LocalDate.of(2025, 3, 1))
                     .purchaseAmount(new BigDecimal("100.00"))
-                    .billerType(BillerType.INSURANCE)
                     .idempotencyKey(id)
                     .build();
 

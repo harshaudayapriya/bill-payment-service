@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: billpay-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: billpaydb
+      POSTGRES_USER: billpay
+      POSTGRES_PASSWORD: billpay_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U billpay -d billpaydb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - billpay-network
+
+  # ── Bill Payment Service ──
+  bill-payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: billpay-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # ── Datasource (points to the postgres container) ──
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/billpaydb
+      SPRING_DATASOURCE_USERNAME: billpay
+      SPRING_DATASOURCE_PASSWORD: billpay_secret
+
+      # ── Security ──
+      ACTUATOR_USERNAME: actuator-admin
+      ACTUATOR_PASSWORD: changeme
+      API_USERNAME: api-user
+      API_PASSWORD: api-password
+      JWT_SECRET: dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLWp3dC1zaWduaW5n
+      X-API-Key: test-api-key
+
+      # ── JPA ──
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8080:8080"
+    networks:
+      - billpay-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  billpay-network:
+    driver: bridge
+

@@ -8,7 +8,7 @@ and **H2 (file-based)** database.
 ### 1. Create Purchase Transaction
 
 - **POST** `/api/v1/transactions`
-- Validates: description (max 50 chars), valid date, positive amount (rounded to nearest cent), biller type
+- Validates: description (max 50 chars), valid date, positive amount (rounded to nearest cent)
 - Returns the created transaction with a unique UUID identifier
 
 ### 2. Retrieve Transaction in a Specified Currency
@@ -25,17 +25,21 @@ and **H2 (file-based)** database.
 
 ## Prerequisites
 
-| Requirement | Version                                        |
-|-------------|------------------------------------------------|
-| Java JDK    | 21+                                            |
-| Maven       | 3.9+ (or use the included `mvnw` wrapper)      |
-| Docker      | 24+ (optional — only for container deployment) |
+| Requirement    | Version                                                |
+|----------------|--------------------------------------------------------|
+| Java JDK       | 21+                                                    |
+| Maven          | 3.9+ (or use the included `mvnw` wrapper)              |
+| Docker         | 24+ (required for PostgreSQL and container deployment) |
+| Docker Compose | v2+ (bundled with Docker Desktop)                      |
+| PostgreSQL     | 16+ (provided via Docker — no local install needed)    |
 
 > **Note:** You do NOT need to install Maven separately. The project includes the Maven Wrapper (`mvnw`).
 
 ---
 
 ## Quick Start
+
+The fastest way to get everything running (PostgreSQL + app) is with Docker Compose:
 
 ```bash
 # Clone and enter the project
@@ -61,8 +65,7 @@ curl -X POST http://localhost:8080/api/v1/transactions \
     "idempotencyKey": "550e8400-e29b-41d4-a716-446655440000",
     "description": "Electric bill March 2025",
     "transactionDate": "2025-03-15",
-    "purchaseAmount": 150.75,
-    "billerType": "ELECTRICITY"
+    "purchaseAmount": 150.75
   }'
 ```
 
@@ -74,7 +77,6 @@ curl -X POST http://localhost:8080/api/v1/transactions \
   "description": "Electric bill March 2025",
   "transactionDate": "2025-03-15",
   "purchaseAmount": 150.75,
-  "billerType": "ELECTRICITY",
   "createdAt": "2025-03-15T10:30:00"
 }
 ```
@@ -93,7 +95,6 @@ curl -H "X-API-Key: test-api-key" \
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "description": "Electric bill March 2025",
   "transactionDate": "2025-03-15",
-  "billerType": "ELECTRICITY",
   "originalAmountUsd": 150.75,
   "exchangeRate": 1.35,
   "convertedAmount": 203.51,
@@ -111,11 +112,6 @@ These are the `currency` parameter values accepted by the Treasury Reporting Rat
 | `Canada-Dollar`        | Canadian Dollar |
 | `Euro Zone-Euro`       | Euro            |
 | `United Kingdom-Pound` | British Pound   |
-
-### Supported Biller Types
-
-`ELECTRICITY`, `WATER`, `GAS`, `INTERNET`, `TELEPHONE`, `CABLE_TV`, `INSURANCE`, `CREDIT_CARD`, `MORTGAGE`, `EDUCATION`,
-`GOVERNMENT`, `OTHER`
 
 ## Swagger UI / OpenAPI
 

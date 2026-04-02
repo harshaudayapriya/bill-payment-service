@@ -6,7 +6,6 @@ import com.hash.billpay.config.TestConfig;
 import com.hash.billpay.dto.PurchaseTransactionRequest;
 import com.hash.billpay.dto.PurchaseTransactionResponse;
 import com.hash.billpay.exception.DuplicateTransactionException;
-import com.hash.billpay.model.BillerType;
 import com.hash.billpay.service.PurchaseTransactionService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -81,7 +80,6 @@ class PurchaseTransactionControllerTest {
                     .description("Electric bill payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             PurchaseTransactionResponse response = PurchaseTransactionResponse.builder()
@@ -89,7 +87,6 @@ class PurchaseTransactionControllerTest {
                     .description("Electric bill payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
-                    .billerType(BillerType.ELECTRICITY)
                     .createdAt(LocalDateTime.now())
                     .build();
 
@@ -102,8 +99,7 @@ class PurchaseTransactionControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(id.toString()))
                     .andExpect(jsonPath("$.description").value("Electric bill payment"))
-                    .andExpect(jsonPath("$.purchaseAmount").value(150.75))
-                    .andExpect(jsonPath("$.billerType").value("ELECTRICITY"));
+                    .andExpect(jsonPath("$.purchaseAmount").value(150.75));
         }
 
         @Test
@@ -114,7 +110,6 @@ class PurchaseTransactionControllerTest {
                     .description("")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
@@ -132,7 +127,6 @@ class PurchaseTransactionControllerTest {
                     .description("A".repeat(51))
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("150.75"))
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
@@ -150,7 +144,6 @@ class PurchaseTransactionControllerTest {
                     .description("Test payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("-10.00"))
-                    .billerType(BillerType.WATER)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
@@ -168,7 +161,6 @@ class PurchaseTransactionControllerTest {
                     .description("Test payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(BigDecimal.ZERO)
-                    .billerType(BillerType.WATER)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
@@ -185,7 +177,6 @@ class PurchaseTransactionControllerTest {
                     .idempotencyKey(UUID.randomUUID())
                     .description("Test payment")
                     .purchaseAmount(new BigDecimal("50.00"))
-                    .billerType(BillerType.GAS)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
@@ -195,30 +186,12 @@ class PurchaseTransactionControllerTest {
                     .andExpect(status().isBadRequest());
         }
 
-        @Test
-        @DisplayName("Should return 400 when biller type is null")
-        void shouldFailWhenBillerTypeNull() throws Exception {
-            PurchaseTransactionRequest request = PurchaseTransactionRequest.builder()
-                    .idempotencyKey(UUID.randomUUID())
-                    .description("Test payment")
-                    .transactionDate(LocalDate.of(2025, 3, 15))
-                    .purchaseAmount(new BigDecimal("50.00"))
-                    .billerType(null)
-                    .build();
-
-            mockMvc.perform(post("/api/v1/transactions")
-                            .header(API_KEY_HEADER, VALID_API_KEY)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
-        }
 
         @Test
         @DisplayName("Should return 400 when transaction date has invalid format")
         void shouldFailWhenDateFormatInvalid() throws Exception {
             String invalidJson = """
                     {
-                        "billerType": "ELECTRICITY",
                         "purchaseAmount": 50.00,
                         "transactionDate": "not-a-date",
                         "description": "Test payment"
@@ -239,7 +212,6 @@ class PurchaseTransactionControllerTest {
         void shouldFailWhenDateValuesInvalid() throws Exception {
             String invalidJson = """
                     {
-                        "billerType": "ELECTRICITY",
                         "purchaseAmount": 50.00,
                         "transactionDate": "2025-13-45",
                         "description": "Test payment"
@@ -262,7 +234,6 @@ class PurchaseTransactionControllerTest {
                     .description("Test payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("50.00"))
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
@@ -281,7 +252,6 @@ class PurchaseTransactionControllerTest {
                     .description("Test payment")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("50.00"))
-                    .billerType(BillerType.ELECTRICITY)
                     .build();
 
             when(transactionService.createTransaction(any()))
@@ -311,7 +281,6 @@ class PurchaseTransactionControllerTest {
                     .description("Internet bill")
                     .transactionDate(LocalDate.of(2025, 2, 10))
                     .purchaseAmount(new BigDecimal("89.99"))
-                    .billerType(BillerType.INTERNET)
                     .createdAt(LocalDateTime.now())
                     .build();
 
@@ -321,8 +290,7 @@ class PurchaseTransactionControllerTest {
                             .header(API_KEY_HEADER, VALID_API_KEY))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id.toString()))
-                    .andExpect(jsonPath("$.description").value("Internet bill"))
-                    .andExpect(jsonPath("$.billerType").value("INTERNET"));
+                    .andExpect(jsonPath("$.description").value("Internet bill"));
         }
     }
 }

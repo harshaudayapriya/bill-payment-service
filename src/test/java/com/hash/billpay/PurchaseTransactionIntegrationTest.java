@@ -2,7 +2,6 @@ package com.hash.billpay;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hash.billpay.dto.PurchaseTransactionRequest;
-import com.hash.billpay.model.BillerType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,6 @@ class PurchaseTransactionIntegrationTest {
                 .description("Integration test bill")
                 .transactionDate(LocalDate.of(2025, 3, 15))
                 .purchaseAmount(new BigDecimal("99.99"))
-                .billerType(BillerType.ELECTRICITY)
                 .build();
     }
 
@@ -70,7 +68,6 @@ class PurchaseTransactionIntegrationTest {
                     .andExpect(jsonPath("$.id").isNotEmpty())
                     .andExpect(jsonPath("$.description").value("Integration test bill"))
                     .andExpect(jsonPath("$.purchaseAmount").value(99.99))
-                    .andExpect(jsonPath("$.billerType").value("ELECTRICITY"))
                     .andExpect(jsonPath("$.transactionDate").value("2025-03-15"))
                     .andReturn();
 
@@ -84,8 +81,7 @@ class PurchaseTransactionIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
                     .andExpect(jsonPath("$.description").value("Integration test bill"))
-                    .andExpect(jsonPath("$.purchaseAmount").value(99.99))
-                    .andExpect(jsonPath("$.billerType").value("ELECTRICITY"));
+                    .andExpect(jsonPath("$.purchaseAmount").value(99.99));
         }
 
         @Test
@@ -98,7 +94,6 @@ class PurchaseTransactionIntegrationTest {
                         .description("Paginated tx " + i)
                         .transactionDate(LocalDate.of(2025, 1, 1 + i))
                         .purchaseAmount(new BigDecimal("10.00"))
-                        .billerType(BillerType.OTHER)
                         .build();
 
                 mockMvc.perform(post("/api/v1/transactions")
@@ -170,7 +165,6 @@ class PurchaseTransactionIntegrationTest {
                     .description("Bad decimals")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("10.999"))
-                    .billerType(BillerType.OTHER)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")
@@ -222,7 +216,6 @@ class PurchaseTransactionIntegrationTest {
                     .description("Rounding test")
                     .transactionDate(LocalDate.of(2025, 3, 15))
                     .purchaseAmount(new BigDecimal("25.50"))
-                    .billerType(BillerType.OTHER)
                     .build();
 
             mockMvc.perform(post("/api/v1/transactions")

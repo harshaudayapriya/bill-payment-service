@@ -1,6 +1,5 @@
 package com.hash.billpay.repository;
 
-import com.hash.billpay.model.BillerType;
 import com.hash.billpay.model.PurchaseTransaction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +17,6 @@ public interface PurchaseTransactionRepository extends JpaRepository<PurchaseTra
 
     Page<PurchaseTransaction> findByTransactionDateBetween(LocalDate from, LocalDate to, Pageable pageable);
 
-    Page<PurchaseTransaction> findByBillerType(BillerType billerType, Pageable pageable);
 
     Optional<PurchaseTransaction> findByIdempotencyKey(UUID id);
 }

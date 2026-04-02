@@ -1,6 +1,5 @@
 package com.hash.billpay.dto;
 
-import com.hash.billpay.model.BillerType;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -20,7 +19,6 @@ public class ConvertedTransactionResponse {
     private UUID id;
     private String description;
     private LocalDate transactionDate;
-    private BillerType billerType;
 
     /**
      * Original purchase amount in USD.

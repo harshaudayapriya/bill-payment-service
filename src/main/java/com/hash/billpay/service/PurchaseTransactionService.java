@@ -1,6 +1,6 @@
 package com.hash.billpay.service;
 
-import com.hash.billpay.client.ExchangeRateClient;
+import com.hash.billpay.client.ExchangeRateProvider;
 import com.hash.billpay.dto.ConvertedTransactionResponse;
 import com.hash.billpay.dto.ExchangeRateEntry;
 import com.hash.billpay.dto.PurchaseTransactionRequest;
@@ -25,7 +25,7 @@ import java.util.UUID;
 @Service
 public class PurchaseTransactionService {
 
-    private final ExchangeRateClient exchangeRateClient;
+    private final ExchangeRateProvider exchangeRateProvider;
     private final PurchaseTransactionRepository repository;
 
     /**
@@ -43,7 +43,6 @@ public class PurchaseTransactionService {
                 .description(request.getDescription())
                 .transactionDate(request.getTransactionDate())
                 .purchaseAmount(request.getPurchaseAmount().setScale(2, RoundingMode.HALF_UP))
-                .billerType(request.getBillerType())
                 .build();
 
         PurchaseTransaction saved = repository.save(transaction);
@@ -90,7 +89,7 @@ public class PurchaseTransactionService {
                 .orElseThrow(() -> new TransactionNotFoundException(id));
 
         // Fetch the closest exchange rate from the external API
-        ExchangeRateEntry rateEntry = exchangeRateClient.getExchangeRate(
+        ExchangeRateEntry rateEntry = exchangeRateProvider.getExchangeRate(
                 targetCurrency, transaction.getTransactionDate());
         // Convert: convertedAmount = originalAmount * exchangeRate
         BigDecimal convertedAmount = transaction.getPurchaseAmount()
@@ -103,7 +102,6 @@ public class PurchaseTransactionService {
                 .id(transaction.getId())
                 .description(transaction.getDescription())
                 .transactionDate(transaction.getTransactionDate())
-                .billerType(transaction.getBillerType())
                 .originalAmountUsd(transaction.getPurchaseAmount())
                 .exchangeRate(rateEntry.getExchangeRate())
                 .convertedAmount(convertedAmount)
@@ -118,8 +116,10 @@ public class PurchaseTransactionService {
                 .description(entity.getDescription())
                 .transactionDate(entity.getTransactionDate())
                 .purchaseAmount(entity.getPurchaseAmount())
-                .billerType(entity.getBillerType())
                 .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .createdBy(entity.getCreatedBy())
+                .updatedBy(entity.getUpdatedBy())
                 .build();
     }
 }

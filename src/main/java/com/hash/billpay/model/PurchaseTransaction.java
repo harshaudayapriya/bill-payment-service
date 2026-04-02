@@ -2,18 +2,22 @@ package com.hash.billpay.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
+import org.springframework.data.domain.Auditable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
  * JPA entity representing a purchase transaction (bill payment).
+ * Extends {@link Auditable} for automatic {@code createdAt}, {@code updatedAt},
+ * {@code createdBy}, and {@code updatedBy} tracking.
  */
 @Entity
 @Table(name = "purchase_transaction", uniqueConstraints = {
@@ -23,8 +27,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class PurchaseTransaction {
+@SuperBuilder
+public class PurchaseTransaction extends BaseAuditEntity {
 
     /**
      * Unique identifier for the purchase transaction.
@@ -64,21 +68,6 @@ public class PurchaseTransaction {
     @Column(name = "purchase_amount", nullable = false, precision = 17, scale = 2)
     private BigDecimal purchaseAmount;
 
-    /**
-     * Biller type / service provider category.
-     */
-    @NotNull(message = "Biller type is required")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "biller_type", nullable = false)
-    private BillerType billerType;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 
     /**
      * Ensures the purchase amount is rounded to the nearest cent before persisting.

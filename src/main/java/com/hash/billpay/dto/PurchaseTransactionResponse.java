@@ -1,6 +1,5 @@
 package com.hash.billpay.dto;
 
-import com.hash.billpay.model.BillerType;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -22,6 +21,8 @@ public class PurchaseTransactionResponse {
     private String description;
     private LocalDate transactionDate;
     private BigDecimal purchaseAmount;
-    private BillerType billerType;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private String createdBy;
+    private String updatedBy;
 }
